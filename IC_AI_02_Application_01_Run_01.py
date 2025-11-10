@@ -5,35 +5,13 @@ import time
 
 # Distance estimation configuration (calibrate these values)
 KNOWN_WIDTH = 10.0      # Real width of your object in cm
-FOCAL_LENGTH = None     # Set after calibration (e.g., 800.0)
-
-# Angle calculation configuration (typical Logitech camera values)
-HORIZONTAL_FOV = 60.0   # Horizontal field of view in degrees
-VERTICAL_FOV = 45.0     # Vertical field of view in degrees
+FOCAL_LENGTH = 908.47     # Set after calibration (e.g., 800.0)
 
 def calculate_distance(pixel_width, known_width, focal_length):
     """Calculate distance: Distance = (Real_Width × Focal_Length) / Pixel_Width"""
     if focal_length is None or focal_length <= 0:
         return None
     return (known_width * focal_length) / pixel_width
-
-def calculate_angle_from_center(position, image_dimension, fov):
-    """
-    Calculate angle of object from camera center
-    
-    Args:
-        position: X or Y coordinate of object center
-        image_dimension: Width or height of image
-        fov: Field of view in degrees
-    
-    Returns:
-        Angle in degrees (negative = left/down, positive = right/up)
-    """
-    image_center = image_dimension / 2
-    pixel_offset = position - image_center
-    pixels_per_degree = image_dimension / fov
-    angle = pixel_offset / pixels_per_degree
-    return angle
 
 # used to record the time when we processed last frame
 prev_frame_time = 0
@@ -75,14 +53,6 @@ while(1):
 
     # Create a copy of the frame for drawing
     annotated_frame = frame.copy()
-    
-    # Draw center crosshair (reference point for 0° angles)
-    frame_height, frame_width = annotated_frame.shape[:2]
-    center_frame_x = frame_width // 2
-    center_frame_y = frame_height // 2
-    cv2.line(annotated_frame, (center_frame_x - 20, center_frame_y), (center_frame_x + 20, center_frame_y), (255, 255, 255), 1)
-    cv2.line(annotated_frame, (center_frame_x, center_frame_y - 20), (center_frame_x, center_frame_y + 20), (255, 255, 255), 1)
-    cv2.circle(annotated_frame, (center_frame_x, center_frame_y), 3, (255, 255, 255), -1)
 
     # ===================================================
     # Process Model 01 detections (green boxes)
@@ -96,31 +66,18 @@ while(1):
         x1, y1, x2, y2 = map(int, box)
         class_name = names_01[int(cls_id)]
         
-        # Calculate center of bounding box
-        center_x = (x1 + x2) / 2
-        center_y = (y1 + y2) / 2
-        
         # Calculate distance
         pixel_width = x2 - x1
         distance = calculate_distance(pixel_width, KNOWN_WIDTH, FOCAL_LENGTH)
         
-        # Calculate angles from camera center
-        frame_height, frame_width = annotated_frame.shape[:2]
-        horizontal_angle = calculate_angle_from_center(center_x, frame_width, HORIZONTAL_FOV)
-        vertical_angle = calculate_angle_from_center(center_y, frame_height, VERTICAL_FOV)
-        
-        # Create label (with distance and angles)
+        # Create label (with distance if available)
         if distance:
-            label = f"[01]: {class_name}: {conf:.2f} | {distance:.1f}cm | H:{horizontal_angle:.1f}° V:{vertical_angle:.1f}°"
+            label = f"[01]: {class_name}: {conf:.2f} | {distance:.1f}cm"
         else:
-            label = f"[01]: {class_name}: {conf:.2f} | H:{horizontal_angle:.1f}° V:{vertical_angle:.1f}°"
+            label = f"[01]: {class_name}: {conf:.2f}"
 
         # Draw green rectangle (Model 01)
         cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        
-        # Draw center point
-        cv2.circle(annotated_frame, (int(center_x), int(center_y)), 5, (0, 255, 0), -1)
-        
         # Draw label background
         label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
         cv2.rectangle(annotated_frame, (x1, y1 - label_size[1] - 10), (x1 + label_size[0], y1), (0, 255, 0), -1)
