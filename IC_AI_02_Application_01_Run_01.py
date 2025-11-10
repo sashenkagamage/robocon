@@ -3,6 +3,16 @@ import cv2
 import numpy as np
 import time
 
+# Distance estimation configuration (calibrate these values)
+KNOWN_WIDTH = 10.0      # Real width of your object in cm
+FOCAL_LENGTH = None     # Set after calibration (e.g., 800.0)
+
+def calculate_distance(pixel_width, known_width, focal_length):
+    """Calculate distance: Distance = (Real_Width × Focal_Length) / Pixel_Width"""
+    if focal_length is None or focal_length <= 0:
+        return None
+    return (known_width * focal_length) / pixel_width
+
 # used to record the time when we processed last frame
 prev_frame_time = 0
 # used to record the time at which we processed current frame
@@ -55,7 +65,16 @@ while(1):
     for box, conf, cls_id in zip(boxes_01, confidences_01, class_ids_01):
         x1, y1, x2, y2 = map(int, box)
         class_name = names_01[int(cls_id)]
-        label = f"[01]: {class_name}: {conf:.2f}"
+        
+        # Calculate distance
+        pixel_width = x2 - x1
+        distance = calculate_distance(pixel_width, KNOWN_WIDTH, FOCAL_LENGTH)
+        
+        # Create label (with distance if available)
+        if distance:
+            label = f"[01]: {class_name}: {conf:.2f} | {distance:.1f}cm"
+        else:
+            label = f"[01]: {class_name}: {conf:.2f}"
 
         # Draw green rectangle (Model 01)
         cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)

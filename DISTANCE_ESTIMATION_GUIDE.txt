@@ -1,0 +1,160 @@
+===============================================================
+  DISTANCE ESTIMATION SETUP GUIDE - Logitech 720p Camera
+===============================================================
+
+WHAT YOU NEED:
+1. Your trained YOLO model (IC_AI_Model_01/result/train/weights/best.pt)
+2. A ruler or measuring tape
+3. Your Logitech 720p camera
+4. The object you want to detect
+
+===============================================================
+STEP-BY-STEP CALIBRATION:
+===============================================================
+
+STEP 1: Measure Your Object
+----------------------------
+- Use a ruler to measure the WIDTH of your object
+- Measure in centimeters (cm)
+- This should be the width that's typically visible in the camera view
+- Example: If detecting a can, measure its diameter (e.g., 6.5 cm)
+
+Write it down: Object width = _____ cm
+
+
+STEP 2: Take a Calibration Photo
+----------------------------------
+1. Place your camera on a stable surface
+2. Use a measuring tape to place your object at a KNOWN DISTANCE
+   - Example: 50 cm from the camera lens
+   - Measure carefully! Accuracy here = accurate distance estimation
+3. Make sure the object is:
+   - Fully visible in the frame
+   - Facing the camera (not tilted)
+   - Well-lit
+4. Take a photo using your camera or this command:
+   
+   Press 'S' while running the webcam to save a frame
+   Or use any image capture software
+
+
+STEP 3: Configure and Run Calibration
+---------------------------------------
+1. Open IC_AI_01_Model_01_Inference.py
+2. Set these values:
+   
+   KNOWN_WIDTH = 10.0  # Your object width in cm
+   CALIBRATION_MODE = True
+   CALIBRATION_IMAGE = "calibration.jpg"  # Path to your photo
+   KNOWN_DISTANCE = 50.0  # Distance you measured in cm
+
+3. Run the script:
+   python IC_AI_01_Model_01_Inference.py
+
+4. The script will output something like:
+   ✓ Calibrated Focal Length: 845.32 pixels
+   
+5. COPY THIS NUMBER! You'll need it for the next step.
+
+
+STEP 4: Update Your Code
+--------------------------
+1. In IC_AI_01_Model_01_Inference.py, set:
+   
+   CALIBRATION_MODE = False
+   estimator.focal_length = 845.32  # Your calibrated value
+
+2. Save the file
+
+
+STEP 5: Run Distance Detection!
+---------------------------------
+Now you can run:
+
+python IC_AI_01_Model_01_Inference.py
+
+This will:
+- Open your Logitech 720p camera (1280x720 resolution)
+- Detect objects using your trained model
+- Calculate and display the distance to each object in cm
+- Show distance in different colors:
+  * GREEN = Far (>100cm)
+  * YELLOW = Medium (50-100cm)
+  * RED = Close (<50cm)
+
+Press 'Q' to quit
+
+
+===============================================================
+TIPS FOR BETTER ACCURACY:
+===============================================================
+
+✓ Use the same camera resolution for calibration and detection (720p)
+✓ Keep the camera in the same position/angle
+✓ Make sure lighting conditions are similar
+✓ Works best for distances between 20cm - 200cm
+✓ Object should be facing the camera (not heavily tilted)
+✓ Calibrate for the specific object size you're detecting
+
+
+===============================================================
+TROUBLESHOOTING:
+===============================================================
+
+Problem: "No object detected" during calibration
+Solution: - Make sure object is in frame and visible
+          - Check if your model is trained to detect this object
+          - Ensure good lighting
+
+Problem: Distance seems way off
+Solution: - Re-calibrate with accurate measurements
+          - Make sure KNOWN_WIDTH is correct
+          - Verify KNOWN_DISTANCE was measured accurately
+
+Problem: Camera not opening
+Solution: - Try different camera index: estimator.detect_and_measure(1)
+          - Check if camera is connected
+          - Close other apps using the camera
+
+Problem: Slow detection
+Solution: - Model will use GPU if available (faster)
+          - Reduce image size in model training
+          - Use a smaller YOLO model (yolo11n is already small)
+
+
+===============================================================
+EXAMPLE USAGE IN YOUR CODE:
+===============================================================
+
+# Real-time webcam with 720p
+estimator.detect_and_measure(0, resolution=(1280, 720))
+
+# Process a video file and save output
+estimator.detect_and_measure("input.mp4", save_path="output.mp4")
+
+# Process a single image
+estimator.detect_and_measure("test.jpg", save_path="result.jpg")
+
+
+===============================================================
+TECHNICAL DETAILS:
+===============================================================
+
+Formula: Distance = (Real_Width × Focal_Length) / Pixel_Width
+
+- Real_Width: Actual object width in cm
+- Focal_Length: Camera focal length in pixels (from calibration)
+- Pixel_Width: Width of bounding box in pixels
+
+Typical focal length for Logitech 720p cameras: 700-900 pixels
+(Your exact value will vary based on camera model)
+
+
+===============================================================
+Need help? Check that:
+- Model path is correct
+- Calibration image exists
+- Object width measurement is accurate
+- Camera is working properly
+===============================================================
+
